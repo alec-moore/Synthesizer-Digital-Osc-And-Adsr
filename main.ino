@@ -29,13 +29,7 @@
 #include <ADSR.h>
 #include <mozzi_fixmath.h>
 #include <Portamento.h>
-
-struct ADSRReadings{
-  unsigned int attack;
-  unsigned int decay;
-  unsigned int sustain;
-  unsigned int release;
-}
+#include "ADSRReadings.h"
 
 MIDI_CREATE_DEFAULT_INSTANCE();
 
