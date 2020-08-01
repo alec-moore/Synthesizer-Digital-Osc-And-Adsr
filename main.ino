@@ -67,11 +67,12 @@ float modFreq2 = 10.f;
 float modDepth = 0;
 
 int nextenv = 1;
-size_t portSpeed = 0;
+int bitmask = 64;
+int multiplier;
+int portSpeed = 0;
+
 float shifted = 0.1f;
 byte mode = 0;
-unsigned int bitmask = 64;
-int multiplier;
 
 byte lastNotes[] = { 0, 0 };
 
