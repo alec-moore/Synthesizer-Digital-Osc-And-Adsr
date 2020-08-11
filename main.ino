@@ -155,7 +155,7 @@ void noteToCarrier(float* carrierFrequency, ADSR<CONTROL_RATE, CONTROL_RATE> ads
   carrierFrequency = parseNote(note);
 }
 
-void parseNote(byte note){
+float parseNote(byte note){
   return Q16n16_to_float(Q16n16_mtof(Q8n0_to_Q16n16(note)));
 }
 
