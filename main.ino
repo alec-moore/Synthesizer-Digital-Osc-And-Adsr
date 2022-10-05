@@ -12,11 +12,11 @@
   //A3 = release
   //A4 = portamento
   //A5 = osc mode
-//OUTPUT == A9 on most arduino.... A11 on arduino mega and typically the bigger ones
+// OUTPUT = A9 on most arduino.... A11 on arduino mega and typically the bigger ones
 
 #define CONTROL_RATE 128
-#define LED 13 // A13
 #define CV_OUT 8  // A8
+#define LED 13 // A13
 
 #include <MIDI.h>
 #include <MozziGuts.h>
@@ -33,10 +33,6 @@
 
 MIDI_CREATE_DEFAULT_INSTANCE();
 
-//  Mozzi example uses COS waves for carrier and modulator
-//  don't use saw/square carrier...
-//  it will sound bad
-//  ... unless you want it to
 Oscil<SMOOTHSQUARE8192_NUM_CELLS, AUDIO_RATE> oscCarrier(SMOOTHSQUARE8192_DATA);
 Oscil<SMOOTHSQUARE8192_NUM_CELLS, AUDIO_RATE> oscSquare2(SMOOTHSQUARE8192_DATA);
 Oscil<COS2048_NUM_CELLS, AUDIO_RATE> oscModulator(COS2048_DATA);
@@ -56,6 +52,7 @@ int chanGain1;
 int chanGain2;
 unsigned int carrierXmodDepth1;
 unsigned int carrierXmodDepth2;
+// TODO: assign a cv output
 //unsigned int cv_out = 0;
 unsigned int cv_in = 0;
 
@@ -81,8 +78,8 @@ float modOffsets[] = {
 }; // harmonic ratios corresponding to DP's preferred intervals of 7, 12, 7, 19, 24, 0, 12, -12, etc
 
 void setup() {
-  pinMode(LED, OUTPUT);   //midi recieved led
-  pinMode(CV_OUT, OUTPUT); //CV OUT
+  pinMode(LED, OUTPUT);   // midi received LED
+  pinMode(CV_OUT, OUTPUT); // For CV OUT
 
   MIDI.begin(MIDI_CHANNEL_OMNI);
 
@@ -95,10 +92,11 @@ void setup() {
   MIDI.setHandleStop(handleStop); 
   MIDI.setHandleStart(handleStart); 
 
+  int twentySeconds = 20000;
   envelope.setADLevels(127,100);
-  envelope.setTimes(20, 20, 20000, 1200); // 20000 = the note will sustain 20 seconds unless a noteOff comes
+  envelope.setTimes(20, 20, twentySeconds, 1200);
   envelope2.setADLevels(127, 100);
-  envelope2.setTimes(20, 20, 20000, 1200); // 20000 = the note will sustain 20 seconds unless a noteOff comes
+  envelope2.setTimes(20, 20, twentySeconds, 1200);
 
   aPortamento.setTime(0u);
   oscLFO.setFreq(10);
@@ -189,12 +187,12 @@ void handlePitchBend (byte channel, int bend) //pitch bend, and mod wheel. I wou
   shifted = float ((bend + 8500) / 2048.f ) + 0.1f;  
   if (mode == 0) 
     oscLFO.setFreq(shifted);
-  if (mode == 1){
+  else if (mode == 1){
      bitmask = 1 << (int (shifted)); 
      multiplier = 7 - (int (shifted)); 
      updateFreqs();
   }
-  if (mode == 2)
+  else if (mode == 2)
     oscSaw2.setFreq(carrier2 * (1.0f + ((shifted - 0.1f) / 384)) );
   else
     bitmask = 64;
@@ -238,7 +236,7 @@ void updateControl(){
   adsrReadings = { analogRead(A0), analogRead(A1), analogRead(A2), analogRead(A3) };
   portSpeed = analogRead(A4);
   mode = map(analogRead(A5), 0, 1023, 0, 5);
-  cv_in = map(mozziAnalogRead(A6),0,1023,48,95);
+  cv_in = map(mozziAnalogRead(A6), 0, 1023, 48, 95);
   
   updateADSR();
   aPortamento.setTime(portSpeed * 2); //multiple of two otherwise effect is kind of indiscernable
@@ -256,24 +254,21 @@ void updateControl(){
     updateFreqs();
   }
 
-
   if (mode == 3) {
     modFreq *= 1.0f + (shifted / 384); // generates fake LFO via detuning mod osc
     modFreq2 *= 1.0f + (shifted / 384); // generates fake LFO via detuning mod osc
     oscModulator.setFreq( modFreq ); 
     oscModulator2.setFreq( modFreq2 ); 
   }
-
 }
 
 int bitCrush(int x, int a){
   return (x >> a) << a;
-} //for later, just destroys a certain amount of bits in a number via shifts
+} // destroys a certain amount of bits in a number via shifts
 
 int updateAudio(){
   switch(mode){
     case 0: // FM with LFO 
-      //NB this multiplication split into 2 chunks to preserve small precise values?  
       int LFO = oscLFO.next();
 
       long vibrato = ( LFO * oscModulator.next() ) >>7 ;
@@ -296,7 +291,6 @@ int updateAudio(){
           ( ( (oscCarrier.next() + squaredSin1 )>>1 )* chanGain1 )
         + ( ( (oscSquare2.next() + squaredSin2 )>>1 )* chanGain2 )
         )) >> 8;
-
       break;
       
     case 2: // 2 tri poly
@@ -304,7 +298,6 @@ int updateAudio(){
           ( oscSaw1.next() *chanGain1 )
         + ( oscSaw2.next() *chanGain2 ) 
         )) >> 9;
-
       break;
 
     case 3: //big whoop
@@ -312,14 +305,11 @@ int updateAudio(){
           (( (oscCarrier.next()^oscModulator.next()) * chanGain1 )  
         + ( (oscSquare2.next()^oscModulator2.next())* chanGain2 ) 
         )) >> 8;
-
       break;
   
     case 4: // 2 sq poly ORd with respective sines
       return (int) (( ( (oscCarrier.next()|oscModulator.next() ) * envelope.next()) + ( (oscSquare2.next()|oscLFO.next() ) * envelope2.next()) )) >> 8;
-      
       break;
-  
   
     case 5: // 2 sq poly
       return (int) (( (oscCarrier.next() * envelope.next()) + (oscSquare2.next() * envelope2.next()) )) >> 8;
@@ -328,7 +318,6 @@ int updateAudio(){
   }
 }
 
-
 void loop() {
-  audioHook(); // required here
+  audioHook();
 } 
